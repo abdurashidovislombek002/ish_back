@@ -153,6 +153,27 @@ exports.setApplicationRole = async (req, res, next) => {
   }
 };
 
+exports.getWorkersCount = async (req, res, next) => {
+  try {
+    const company = await Company.findOne({ where: { owner_id: req.user.id } });
+    if (!company) return res.json({ count: 0 });
+
+    const jobs = await Job.findAll({ where: { company_id: company.id }, attributes: ["id"] });
+    const ids = jobs.map((j) => j.id);
+    if (!ids.length) return res.json({ count: 0 });
+
+    const applications = await Application.findAll({
+      where: { job_id: { [Op.in]: ids }, status: { [Op.in]: ["accepted", "registered"] } },
+      attributes: ["seeker_id"],
+    });
+
+    const count = new Set(applications.map((a) => a.seeker_id)).size;
+    res.json({ count });
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.setApplicationStatus = (status) => async (req, res, next) => {
   try {
     const application = await Application.findByPk(req.params.id, { include: [{ model: Job, as: "job" }] });

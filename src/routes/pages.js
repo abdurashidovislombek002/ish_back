@@ -12,12 +12,14 @@ const {
   getApplicationsByQuery,
   setApplicationRole,
   setApplicationStatus,
+  getWorkersCount,
 } = require("../controllers/pageController");
 
 router.get("/categories", getCategories);
 router.get("/locations", getLocations);
 
 router.get("/my-jobs", auth, requireRole("company_owner"), getMyJobs);
+router.get("/my-workers", auth, requireRole("company_owner"), getWorkersCount);
 router.get("/roles", auth, requireRole("company_owner"), getMyRoles);
 
 router.get("/my-applications", auth, requireRole("seeker"), getMyApplications);
