@@ -163,7 +163,7 @@ exports.getWorkers = async (req, res, next) => {
     if (!ids.length) return res.json({ count: 0, workers: [] });
 
     const applications = await Application.findAll({
-      where: { job_id: { [Op.in]: ids }, status: { [Op.in]: ["accepted", "registered"] } },
+      where: { job_id: { [Op.in]: ids }, status: { [Op.in]: ["accepted"] } },
       include: [
         {
           model: User,
