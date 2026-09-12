@@ -153,22 +153,47 @@ exports.setApplicationRole = async (req, res, next) => {
   }
 };
 
-exports.getWorkersCount = async (req, res, next) => {
+exports.getWorkers = async (req, res, next) => {
   try {
     const company = await Company.findOne({ where: { owner_id: req.user.id } });
-    if (!company) return res.json({ count: 0 });
+    if (!company) return res.json({ count: 0, workers: [] });
 
     const jobs = await Job.findAll({ where: { company_id: company.id }, attributes: ["id"] });
     const ids = jobs.map((j) => j.id);
-    if (!ids.length) return res.json({ count: 0 });
+    if (!ids.length) return res.json({ count: 0, workers: [] });
 
     const applications = await Application.findAll({
       where: { job_id: { [Op.in]: ids }, status: { [Op.in]: ["accepted", "registered"] } },
-      attributes: ["seeker_id"],
+      include: [
+        {
+          model: User,
+          as: "seeker",
+          attributes: ["id", "name", "email", "phone"],
+          include: [{ model: JobSeekerProfile, as: "profile", attributes: ["skills"] }],
+        },
+        { model: Job, as: "job", attributes: ["id", "title"] },
+      ],
+      order: [["created_at", "DESC"]],
     });
 
-    const count = new Set(applications.map((a) => a.seeker_id)).size;
-    res.json({ count });
+    const bySeeker = new Map();
+    for (const app of applications) {
+      if (!app.seeker) continue;
+      if (bySeeker.has(app.seeker.id)) continue;
+      bySeeker.set(app.seeker.id, {
+        id: app.seeker.id,
+        name: app.seeker.name,
+        email: app.seeker.email,
+        phone: app.seeker.phone,
+        skills: app.seeker.profile?.skills || [],
+        role: app.offered_role || null,
+        jobTitle: app.job?.title || null,
+        hiredAt: app.created_at,
+      });
+    }
+
+    const workers = [...bySeeker.values()];
+    res.json({ count: workers.length, workers });
   } catch (err) {
     next(err);
   }
