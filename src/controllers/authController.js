@@ -7,7 +7,7 @@
 
   exports.register = async (req, res, next) => {
     try {
-      const { name, email, password, role, phone } = req.body;
+      const { name, email, password, role, phone, company, companyId } = req.body;
 
       if (!["seeker", "company_owner"].includes(role)) {
         return res.status(400).json({ error: "Noto'g'ri role. 'seeker' yoki 'company_owner'" });
@@ -18,6 +18,23 @@
 
       if (role === "seeker") {
         await JobSeekerProfile.create({ user_id: user.id });
+      }
+
+      if (role === "company_owner") {
+        if (companyId) {
+          const existing = await Company.findByPk(companyId);
+          if (!existing) return res.status(400).json({ error: "Kompaniya topilmadi" });
+          const alreadyOwned = await Company.findOne({ where: { owner_id: user.id } });
+          if (alreadyOwned) return res.status(400).json({ error: "Sizda allaqachon kompaniya mavjud" });
+          await existing.update({ owner_id: user.id });
+        } else if (company?.name) {
+          await Company.create({
+            name: company.name,
+            industry: company.industry || null,
+            address: company.address || null,
+            owner_id: user.id,
+          });
+        }
       }
 
       const token = generateToken(user);
