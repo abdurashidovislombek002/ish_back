@@ -19,6 +19,7 @@ app.use("/api/companies", require("./routes/companies"));
 app.use("/api/jobs", require("./routes/jobs"));
 app.use("/api/applications", require("./routes/applications"));
 app.use("/api/companies", require("./routes/roles"));
+app.use("/api", require("./routes/pages"));
 
 // Health check
 app.get("/", (_req, res) => res.json({ status: "ok", message: "Ish qidirish platformasi API" }));

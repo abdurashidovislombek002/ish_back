@@ -7,7 +7,7 @@
 
   exports.register = async (req, res, next) => {
     try {
-      const { name, email, password, role, phone, company, companyId } = req.body;
+      const { name, email, password, role, phone, company, companyId, skills } = req.body;
 
       if (!["seeker", "company_owner"].includes(role)) {
         return res.status(400).json({ error: "Noto'g'ri role. 'seeker' yoki 'company_owner'" });
@@ -17,7 +17,14 @@
       const user = await User.create({ name, email, password: hash, role, phone });
 
       if (role === "seeker") {
-        await JobSeekerProfile.create({ user_id: user.id });
+        let parsedSkills = [];
+        if (skills) {
+          try { parsedSkills = JSON.parse(skills); } catch (_e) { parsedSkills = []; }
+        }
+        await JobSeekerProfile.create({
+          user_id: user.id,
+          skills: Array.isArray(parsedSkills) ? parsedSkills : [],
+        });
       }
 
       if (role === "company_owner") {

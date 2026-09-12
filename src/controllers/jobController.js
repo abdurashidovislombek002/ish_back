@@ -1,5 +1,6 @@
 const { Op } = require("sequelize");
 const { Job, Company } = require("../models");
+const { mapJob } = require("../utils/serialize");
 
 exports.getAllJobs = async (req, res, next) => {
   try {
@@ -16,7 +17,7 @@ exports.getAllJobs = async (req, res, next) => {
       order: [["created_at", "DESC"]],
     });
 
-    res.json(jobs);
+    res.json(jobs.map(mapJob));
   } catch (err) {
     next(err);
   }
@@ -27,14 +28,17 @@ exports.createJob = async (req, res, next) => {
     const company = await Company.findOne({ where: { owner_id: req.user.id } });
     if (!company) return res.status(400).json({ error: "Avval kompaniya yarating" });
 
-    const { title, description, requirements, salary_min, salary_max, location, category } = req.body;
+    const { title, description, requirements, salary_min, salary_max, location, category, salaryMin, salaryMax } = req.body;
 
     const job = await Job.create({
-      title, description, requirements, salary_min, salary_max, location, category,
+      title, description, requirements,
+      salary_min: salaryMin ?? salary_min ?? null,
+      salary_max: salaryMax ?? salary_max ?? null,
+      location, category,
       company_id: company.id,
     });
 
-    res.status(201).json(job);
+    res.status(201).json(mapJob(job));
   } catch (err) {
     next(err);
   }
@@ -46,7 +50,7 @@ exports.getJobById = async (req, res, next) => {
       include: [{ model: Company, as: "company", attributes: ["id", "name", "industry", "address"] }],
     });
     if (!job) return res.status(404).json({ error: "Ish topilmadi" });
-    res.json(job);
+    res.json(mapJob(job));
   } catch (err) {
     next(err);
   }
@@ -62,8 +66,14 @@ exports.updateJob = async (req, res, next) => {
       return res.status(403).json({ error: "Bu ish sizga tegishli emas" });
     }
 
-    await job.update(req.body);
-    res.json(job);
+    const data = {
+      ...req.body,
+      salary_min: req.body.salaryMin ?? req.body.salary_min ?? undefined,
+      salary_max: req.body.salaryMax ?? req.body.salary_max ?? undefined,
+    };
+
+    await job.update(data);
+    res.json(mapJob(job));
   } catch (err) {
     next(err);
   }
