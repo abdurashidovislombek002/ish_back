@@ -5,7 +5,14 @@ exports.getRoles = async (req, res, next) => {
     const company = await Company.findByPk(req.params.id);
     if (!company) return res.status(404).json({ error: "Kompaniya topilmadi" });
 
-    const roles = await Role.findAll({ where: { company_id: req.params.id } });
+    let roles = await Role.findAll({ where: { company_id: req.params.id } });
+
+    if (roles.length === 0) {
+      const defaultRoles = ["Shogirt", "Yordamchi", "Glavniy"];
+      await Role.bulkCreate(defaultRoles.map((name) => ({ name, company_id: company.id })));
+      roles = await Role.findAll({ where: { company_id: req.params.id } });
+    }
+
     res.json(roles);
   } catch (err) {
     next(err);

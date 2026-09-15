@@ -29,4 +29,8 @@ Application.belongsTo(User, { foreignKey: "seeker_id", as: "seeker" });
 Company.hasMany(Role, { foreignKey: "company_id", as: "roles" });
 Role.belongsTo(Company, { foreignKey: "company_id", as: "company" });
 
+// Role -> Applications (nomzodga biriktirilgan rol)
+Role.hasMany(Application, { foreignKey: "assigned_role_id", as: "applications" });
+Application.belongsTo(Role, { foreignKey: "assigned_role_id", as: "role" });
+
 module.exports = { User, Company, JobSeekerProfile, Job, Application, Role };

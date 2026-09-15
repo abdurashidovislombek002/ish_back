@@ -1,4 +1,4 @@
-const { Application, Job, Company, User } = require("../models");
+const { Application, Job, Company, User, Role } = require("../models");
 
 exports.createApplication = async (req, res, next) => {
   try {
@@ -43,7 +43,10 @@ exports.getJobApplications = async (req, res, next) => {
 
     const applications = await Application.findAll({
       where: { job_id: req.params.jobId },
-      include: [{ model: User, as: "seeker", attributes: ["id", "name", "email", "phone"] }],
+      include: [
+        { model: User, as: "seeker", attributes: ["id", "name", "email", "phone"] },
+        { model: Role, as: "role", attributes: ["id", "name"] },
+      ],
       order: [["created_at", "DESC"]],
     });
     res.json(applications);
@@ -64,9 +67,19 @@ exports.updateApplication = async (req, res, next) => {
       return res.status(403).json({ error: "Bu ariza sizga tegishli emas" });
     }
 
-    const { status, offered_role } = req.body;
+    const { status, offered_role, role_id } = req.body;
     if (status) application.status = status;
     if (offered_role) application.offered_role = offered_role;
+
+    if (role_id !== undefined && role_id !== null && role_id !== "") {
+      const role = await Role.findByPk(role_id);
+      if (!role || role.company_id !== application.job.company_id) {
+        return res.status(400).json({ error: "Bu rol ushbu kompaniyaga tegishli emas" });
+      }
+      application.assigned_role_id = role.id;
+      application.offered_role = role.name;
+    }
+
     await application.save();
 
     res.json(application);
