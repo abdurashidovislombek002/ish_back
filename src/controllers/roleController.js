@@ -8,7 +8,7 @@ exports.getRoles = async (req, res, next) => {
     let roles = await Role.findAll({ where: { company_id: req.params.id } });
 
     if (roles.length === 0) {
-      const defaultRoles = ["Shogirt", "Yordamchi", "Glavniy"];
+      const defaultRoles = ["Admin", "Ishchi", "Yordamchi", "Uborshik"];
       await Role.bulkCreate(defaultRoles.map((name) => ({ name, company_id: company.id })));
       roles = await Role.findAll({ where: { company_id: req.params.id } });
     }
